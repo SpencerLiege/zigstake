@@ -219,7 +219,7 @@ fn execute_resume(deps: DepsMut, _env: Env, info: MessageInfo) -> Result<Respons
 
     // check if user is admin
     if info.sender != config.admin {
-        return (Err(ContractError::Unauthorized {}));
+        return Err(ContractError::Unauthorized {});
     }
 
     // resume the contract
@@ -361,7 +361,7 @@ fn execute_place_bet(
         .add_attribute("user", info.sender.to_string())
         .add_attribute("amount", bet_amount)
         .add_attribute(
-            ("direction"),
+            "direction",
             match direction {
                 Direction::Down => "Down",
                 Direction::Up => "Up",
