@@ -54,4 +54,87 @@ pub fn query(
 
 // Contract test will go here and will be update
 #[cfg(test)]
-mod tests {}
+mod tests {
+
+    use super::*;
+    use cosmwasm_std::testing::{mock_dependencies, mock_env, message_info};
+    use cosmwasm_std::{attr, coins, from_json, Addr, Uint128};
+
+    use crate::msg::{self, ExecuteMsg, InstantiateMsg};
+    use crate::state::CONFIG;
+    
+    fn inst(deps: DepsMut, addr: &Addr ) {
+        let msg = InstantiateMsg {
+            treasury_fee: 200
+        };
+        let env = mock_env();
+        let info = message_info(&addr, &[]);
+
+        instantiate(deps, env, info, msg).unwrap();
+    }
+
+    #[test]
+    fn test_instantiate_contract () {
+        let mut deps = mock_dependencies();
+        let addr = deps.api.addr_make("creator");
+
+        let instantiate_msg: InstantiateMsg = InstantiateMsg {
+            treasury_fee: 500
+        };
+        
+        let info = message_info(&addr, &[]);
+        let env = mock_env();
+
+        let response = instantiate(deps.as_mut(), env, info.clone(), instantiate_msg).unwrap();
+
+        assert_eq!(
+            response.attributes,
+            vec![
+                attr("action", "instantiate"),
+                attr("admin", info.sender.to_string()),
+                attr("treasury-fee", "500")
+            ]
+        );
+
+        let config = CONFIG.load(&deps.storage).unwrap();
+        assert_eq!(config.admin, info.sender);
+        assert_eq!(config.treasury_fee, 500);
+        assert_eq!(config.paused, false);
+        assert_eq!(config.current_round_id, 1);
+    }
+
+    #[test]
+    fn test_place_bet() {
+        // Instantiate the contract
+        let mut deps = mock_dependencies();
+        let addr= deps.api.addr_make("creator");
+        inst(deps.as_mut(), &addr);
+
+        // create user to place bet
+        let bettor = deps.api.addr_make("bettor");
+        let env = mock_env();
+        let info = message_info(&bettor, &coins(20, "uzig"));
+        let into = message_info(&addr, &[]);
+        // let config = CONFIG.load(deps.storage).unwrap();
+
+        let msg = ExecuteMsg::PlaceBet { round_id: 1, direction: msg::Direction::Down };
+        let start_msg = ExecuteMsg::StartRound { price: Uint128::from(123456u64) };
+
+        // call the contract
+        execute(deps.as_mut(), env.clone(), into.clone(), start_msg).unwrap();
+        let response = execute(deps.as_mut(), env.clone(), info.clone(), msg).unwrap();
+
+        // Assert values
+        assert_eq!(
+            response.attributes,
+            vec![
+                attr("action", "place_bet"),
+                attr("round_id", "1"),
+                attr("user", info.sender.to_string()),
+                attr("amount", "20"),
+                attr("direction", "Down")
+            ]
+        )
+    }
+
+}

@@ -44,8 +44,8 @@ fn execute_start_round(
 
     // Timestaps
     let beginning: Timestamp = env.block.time;
-    let lock: Timestamp = Timestamp::from_seconds(300);
-    let end: Timestamp = Timestamp::from_seconds(300);
+    let lock: Timestamp = Timestamp::plus_minutes(&beginning, 5);
+    let end: Timestamp = Timestamp::plus_minutes(&beginning, 5);
 
     let round: Round = Round {
         id: config.current_round_id,
